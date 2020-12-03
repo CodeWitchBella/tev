@@ -100,6 +100,13 @@ int mainFunc(const vector<string>& arguments) {
         {'n', "new"},
     };
 
+    Flag reloadFlag{
+        parser,
+        "RELOAD",
+        "Reloads image.",
+        {'r', "reload"},
+    };
+
     ValueFlag<float> offsetFlag{
         parser,
         "OFFSET",
@@ -180,7 +187,11 @@ int mainFunc(const vector<string>& arguments) {
 
             try {
                 IpcPacket packet;
-                packet.setOpenImage(tfm::format("%s:%s", path{imageFile}.make_absolute(), channelSelector), true);
+                if (reloadFlag) {
+                    packet.setReloadImage(tfm::format("%s", path{imageFile}.make_absolute()), false);
+                } else {
+                    packet.setOpenImage(tfm::format("%s:%s", path{imageFile}.make_absolute(), channelSelector), true);
+                }
                 ipc->sendToPrimaryInstance(packet);
             } catch (runtime_error e) {
                 tlog::error() << tfm::format("Invalid file '%s': %s", imageFile, e.what());
@@ -259,6 +270,7 @@ int mainFunc(const vector<string>& arguments) {
                                 auto info = packet.interpretAsReloadImage();
                                 imageViewer->scheduleToUiThread([&,info] {
                                     string imageString = ensureUtf8(info.imageName);
+                                    std::cout << "Reload image " << imageString << " " << info.grabFocus << "\n";
                                     imageViewer->reloadImage(imageString, info.grabFocus);
                                 });
 
